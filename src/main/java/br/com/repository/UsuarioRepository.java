@@ -86,6 +86,6 @@ public class UsuarioRepository {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		} 
 	}
  }

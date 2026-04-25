@@ -26,7 +26,6 @@ public class UsuarioRepository {
 	//================================
 	// CRIAR ARQUIVO SE NÃO EXISTIR
 	//================================
-	
 	private void criarArquivoSeNaoExistir() {
 		try {
 			File file = new File(CAMINHO_ARQUIVO);

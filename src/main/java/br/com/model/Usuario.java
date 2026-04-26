@@ -2,12 +2,12 @@ package br.com.model;
 
 public class Usuario {
 	private String nome;
-	private String username;
+	private String usuario;
 	private String senha;
 	
-	public Usuario(String nome, String username, String senha) {
+	public Usuario(String nome, String usuario, String senha) {
 		this.nome = nome;
-		this.username = username;
+		this.usuario = usuario;
 		this.senha = senha;
 	}
 
@@ -15,8 +15,8 @@ public class Usuario {
 		return nome;
 	}
 
-	public String getUsername() {
-		return username;
+	public String getUsuario() {
+		return usuario;
 	}
 
 	public String getSenha() {

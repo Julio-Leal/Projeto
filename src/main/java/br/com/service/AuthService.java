@@ -14,15 +14,15 @@ public class AuthService {
 		this.usuarios = repository.carregarUsuarios();
 	}
 	
-	public synchronized boolean cadastrar(String nome, String userName, String senha) {
+	public synchronized boolean cadastrar(String nome, String usuario, String senha) {
 		
 		//VERIFICA SE JÁ EXISTE
 		for(Usuario u : usuarios) {
-			if(u.getUsername().equals(userName))
+			if(u.getUsuario().equals(usuario))
 				return false;
 		}
 		
-		Usuario novo = new Usuario(nome, userName, senha);
+		Usuario novo = new Usuario(nome, usuario, senha);
 		usuarios.add(novo);
 		
 		repository.salvarUsuarios(usuarios);
@@ -30,9 +30,9 @@ public class AuthService {
 		return true;
 	}
 	
-	public Usuario realizarLogin(String username, String senha) {
+	public Usuario realizarLogin(String usuario, String senha) {
 		for(Usuario u : usuarios) {
-			if(u.getUsername().equals(username) && u.getSenha().equals(senha)) {
+			if(u.getUsuario().equals(usuario) && u.getSenha().equals(senha)) {
 				return u;
 			}
 		}

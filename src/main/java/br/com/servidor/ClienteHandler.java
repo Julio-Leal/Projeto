@@ -5,8 +5,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.gson.Gson;
+
+import br.com.model.Mensagem;
 import br.com.model.Usuario;
 import br.com.service.AuthService;
 
@@ -17,9 +21,10 @@ public class ClienteHandler implements Runnable{
 	private PrintWriter out;
 	private BufferedReader in;
 	private Usuario usuario;
+	private String token;
 	
-	//LISTA DE CLIENTES CONEDTADOS (COMPARTILHADO)
-	private static List<ClienteHandler> clientes = new ArrayList<>();
+	//LISTA DE CLIENTES CONECTADOS (THREAD SAFE)
+	private static List<ClienteHandler> clientes = Collections.synchronizedList(new ArrayList<>());
 	
 	public ClienteHandler(Socket socket, AuthService authService) {
 		this.socket = socket;
@@ -32,87 +37,128 @@ public class ClienteHandler implements Runnable{
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new PrintWriter(socket.getOutputStream(), true);
 			
-			autenticar();
+			Gson gson = new Gson();
 			
-			clientes.add(this);
+			String json;
 			
-			broadcast("🟢 " + usuario.getNome() + " entrou no chat!");
-			
-			String mensagem;
-			
-			while ((mensagem = in.readLine()) != null) {
+			while((json = in.readLine()) != null) {
 				
-				if(mensagem.equalsIgnoreCase("/sair")) {
-					break;
-				}
+				Mensagem msg = gson.fromJson(json, Mensagem.class);
 				
-				broadcast("[" + usuario.getNome() + "]: " + mensagem);
+				processarMensagem(msg, gson);
 			}
-			
-		} catch (Exception e) {
-			System.out.println("Erro com cliente: " + e.getMessage());
+		
+		} catch(Exception e) {
+			System.out.println("Erro com cloiente: " + e.getMessage());
 		} finally {
 			desconectar();
 		}
 	}
-	
+
     // =========================
-    // AUTENTICAÇÃO
+    // PROCESSADOR PRINCIPAL
     // =========================
-	private void autenticar() throws Exception {
+	private void processarMensagem(Mensagem msg, Gson gson) {
 		
-		while(usuario == null) {
-			out.println("1 - Login");
-			out.println("2 - Cadastro");
-			
-			String opcao = in.readLine();
-			
-			if(opcao.equals("1")) {
-				
-				out.println("Username: ");
-				String username = in.readLine();
-				
-				out.println("Senha: ");
-				String senha = in.readLine();
-				
-				Usuario u = authService.realizarLogin(username, senha);
-				
-				if(u != null) {
-					usuario = u;
-					out.println("✅ Login Realizado!");
-				} else {
-					out.println("❌ Login Inválido!");
-				}
-			
-			} else if(opcao.equals("2")) {
-				
-				out.println("Nome: ");
-				String nome = in.readLine();
-				
-				out.println("Username: ");
-				String username = in.readLine();
-				
-				out.println("Senha: ");
-				String senha = in.readLine();
-				
-				boolean sucesso = authService.cadastrar(nome, username, senha);
-				
-				if(sucesso) {
-					out.println("✅ Cadastro realizado! Faça login.");
-				} else {
-					out.println("❌ Username já existe");
-				}
-			}
+		if(msg.getOp() == null)
+			return;
+		
+		switch(msg.getOp()) {
+			case "login":
+				tratarLogin(msg, gson);
+				break;
+			case "cadastro":
+				tratarCadastro(msg, gson);
+				break;
+			case "enviarMensagem": 
+				tratarMensagem(msg, gson);
+				break;
+			default: 
+				System.out.println("Operação desconhecida: " + msg.getOp());
 		}
 	}
 	
     // =========================
-    // BROADCAST (CHAT)
+    // LOGIN
     // =========================
-	private void broadcast(String mensagem) {
+	private void tratarLogin(Mensagem msg, Gson gson) {
 		
-		for(ClienteHandler cliente : clientes) {
-			cliente.out.println(mensagem);
+		Usuario u = authService.realizarLogin(msg.getUsuario(), msg.getSenha());
+		
+		Mensagem resposta = new Mensagem();
+		
+		if(u != null) {
+			this.usuario = u;
+			
+			token = "usr_" + u.getUsuario();
+			
+			clientes.add(this);
+			
+			resposta.setResposta("200");
+			resposta.setToken(token);
+			
+		} else {
+			resposta.setResposta("401");
+		}
+		
+		out.println(gson.toJson(resposta));
+	} 
+	
+    // =========================
+    // CADASTRO
+    // =========================
+	private void tratarCadastro(Mensagem msg, Gson gson) {
+		
+		boolean sucesso  = authService.cadastrar(
+				msg.getNome(),
+				msg.getUsuario(),
+				msg.getSenha()
+		);
+		
+		Mensagem resposta = new Mensagem();
+		
+		if(sucesso) {
+			resposta.setResposta("200");
+		} else {
+			resposta.setResposta("400");
+		}
+		
+		out.println(gson.toJson(resposta));
+	}
+	
+
+    // =========================
+    // CHAT 1 PARA 1
+    // =========================
+	private void tratarMensagem(Mensagem msg, Gson gson) {
+		
+		//VALIDA TOKEN
+		if(token == null || !token.equals(msg.getToken())) {
+			return;
+		}
+		
+		boolean enviado = false;
+		
+		synchronized (clientes) {
+			for(ClienteHandler cliente : clientes) {
+				if(cliente.usuario != null && cliente.usuario.getUsuario().equals(msg.getDestinatario())) {
+					Mensagem resposta = new Mensagem();
+					resposta.setMensagem("[" + usuario.getUsuario() + "]" + msg.getMensagem());
+					
+					cliente.out.println(gson.toJson(resposta));
+					
+					enviado = true;
+					break;
+				}
+			}
+		}
+		
+		//FEEDBACK CASO USUÁRIO NÃO SEJA ENCONTRADO
+		if(!enviado) {
+			Mensagem erro = new Mensagem();
+			erro.setMensagem("❌ Usuário não encontrado");
+			
+			out.println(gson.toJson(erro));
 		}
 	}
 	
@@ -122,16 +168,11 @@ public class ClienteHandler implements Runnable{
 	private void desconectar() {
 		try {
 			clientes.remove(this);
-			
-			if(usuario != null) {
-				broadcast("🔴 " + usuario.getNome() + "Saiu do chat!");
-			} 
-			
 			socket.close();
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+	
 	
 }

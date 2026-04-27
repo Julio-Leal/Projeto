@@ -15,19 +15,61 @@ public class AuthService {
 	}
 	
 	public synchronized boolean cadastrar(String nome, String usuario, String senha) {
-		
-		//VERIFICA SE JÁ EXISTE
-		for(Usuario u : usuarios) {
-			if(u.getUsuario().equals(usuario))
-				return false;
-		}
-		
-		Usuario novo = new Usuario(nome, usuario, senha);
-		usuarios.add(novo);
-		
-		repository.salvarUsuarios(usuarios);
-		
-		return true;
+
+	    for (Usuario u : usuarios) {
+
+	        if (u.getUsuario() != null && u.getUsuario().equals(usuario)) {
+	            return false;
+	        }
+	    }
+
+	    Usuario novo = new Usuario(nome, usuario, senha);
+	    usuarios.add(novo);
+
+	    repository.salvarUsuarios(usuarios);
+
+	    return true;
+	}
+	
+	public synchronized boolean atualizarUsuario(String username, String novoNome, String novaSenha) {
+
+	    for (Usuario u : usuarios) {
+	        if (u.getUsuario().equals(username)) {
+
+	            if (novoNome != null && !novoNome.isEmpty()) {
+	                u.setNome(novoNome);
+	            }
+
+	            if (novaSenha != null && !novaSenha.isEmpty()) {
+	                u.setSenha(novaSenha);
+	            }
+
+	            repository.salvarUsuarios(usuarios);
+	            return true;
+	        }
+	    }
+
+	    return false;
+	}
+	
+	public synchronized boolean deletarUsuario(String username) {
+
+	    Usuario remover = null;
+
+	    for (Usuario u : usuarios) {
+	        if (u.getUsuario().equals(username)) {
+	            remover = u;
+	            break;
+	        }
+	    }
+
+	    if (remover != null) {
+	        usuarios.remove(remover);
+	        repository.salvarUsuarios(usuarios);
+	        return true;
+	    }
+
+	    return false;
 	}
 	
 	public Usuario realizarLogin(String usuario, String senha) {

@@ -2,37 +2,53 @@ package br.com.servidor;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
 import br.com.service.AuthService;
 
 public class ServidorMain {
-	
-	private static final int PORTA_PADRAO = 5000; //PORTA PADRÃO
+	private static Scanner input = new Scanner(System.in);
+	private static int portaPadrao; 
 	
 	public static void main(String[] args) {
-		
-		System.out.println("▶️ - Servidor iniciando...");
-		
 		AuthService authService = new AuthService();
-		
-		try(ServerSocket servidor = new ServerSocket(PORTA_PADRAO)) {
+	
+		try {
+			definirPorta();
 			
-			System.out.println("✅ - Servidor rodando na porta " + PORTA_PADRAO);
+			ServerSocket servidor = new ServerSocket(portaPadrao);
+			System.out.println("[servidor]: Executando na porta [" + portaPadrao + "].");
 			
 			while(true) {
-				System.out.println("⌛ - Aguardando cliente...");
+				System.out.println("[servidor]: Aguardando cliente...");
 				
 				Socket clienteSocket = servidor.accept();
 				
-				System.out.println("🔌 - Cliente conectado: " + clienteSocket.getInetAddress());
+				System.out.println("[servidor]: Cliente [" + clienteSocket.getInetAddress() + "] conectado.");
 				
 				ClienteHandler handler = new ClienteHandler(clienteSocket, authService);
 				
 				new Thread(handler).start();
 			}
 		} catch (Exception e) {
-			System.out.println("❌ - Erro no servidor:");
+			System.out.println("[servidor]: Erro!");
 			e.printStackTrace();
 		}
+	}
+
+	private static void definirPorta() {
+		int tempPorta = 0;
+		
+		do {
+			System.out.println("[servidor]: Informe o número da porta: ");
+			tempPorta = input.nextInt();
+			
+			if(tempPorta > 1024 && tempPorta < 49000)
+				portaPadrao = tempPorta;
+			else {
+				System.out.println("[servidor]: A porta informada já está em uso!");
+				tempPorta = 0;
+			}
+		} while(tempPorta == 0);
 	}
 }

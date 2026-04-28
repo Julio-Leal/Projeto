@@ -31,13 +31,17 @@ public class AuthService {
 	    return true;
 	}
 	
-	public synchronized boolean atualizarUsuario(String username, String novoNome, String novaSenha) {
+	public synchronized boolean atualizarUsuario( String usuario, String novoNome, String novoUsuario, String novaSenha) {
 
 	    for (Usuario u : usuarios) {
-	        if (u.getUsuario().equals(username)) {
+	        if (u.getUsuario().equals(usuario)) {
 
 	            if (novoNome != null && !novoNome.isEmpty()) {
 	                u.setNome(novoNome);
+	            }
+	            
+	            if(novoUsuario != null && !novoUsuario.isEmpty()) {
+	            	u.setUsuario(novoUsuario);
 	            }
 
 	            if (novaSenha != null && !novaSenha.isEmpty()) {

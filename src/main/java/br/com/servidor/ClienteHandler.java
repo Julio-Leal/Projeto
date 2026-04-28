@@ -79,7 +79,7 @@ public class ClienteHandler implements Runnable{
 			case "login":
 				tratarLogin(msg, gson);
 				break;
-			case "cadastro":
+			case "cadastrarUsuario":
 				tratarCadastro(msg, gson);
 				break;
 			case "enviarMensagem": 
@@ -148,7 +148,7 @@ public class ClienteHandler implements Runnable{
 		if(sucesso) {
 			resposta.setResposta("200");
 		} else {
-			resposta.setResposta("400");
+			resposta.setResposta("401");
 		}
 		
 		out.println(gson.toJson(resposta));
@@ -217,6 +217,7 @@ public class ClienteHandler implements Runnable{
 			boolean sucesso = authService.atualizarUsuario(
 					usuario.getUsuario(),
 					msg.getNovoNome(),
+					msg.getNovousuario(),
 					msg.getNovaSenha()
 			);
 			
@@ -225,7 +226,7 @@ public class ClienteHandler implements Runnable{
 				usuario.setSenha(msg.getNovaSenha());
 				resposta.setResposta("200");
 			} else {
-				resposta.setResposta("400");
+				resposta.setResposta("401");
 			}
 		}
 		
@@ -256,7 +257,7 @@ public class ClienteHandler implements Runnable{
 				}
 	            
 	        } else {
-	            resposta.setResposta("400");
+	            resposta.setResposta("401");
 	        }
 	    }
 

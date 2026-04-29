@@ -1,88 +1,107 @@
 package br.com.service;
 
 import java.util.List;
-
 import br.com.model.Usuario;
 import br.com.repository.UsuarioRepository;
 
 public class AuthService {
-	private UsuarioRepository repository;
-	private List<Usuario> usuarios;
-	
-	public AuthService() {
-		this.repository = new UsuarioRepository();
-		this.usuarios = repository.carregarUsuarios();
-	}
-	
-	public synchronized boolean cadastrar(String nome, String usuario, String senha) {
 
-	    for (Usuario u : usuarios) {
+    private UsuarioRepository repository;
+    private List<Usuario> usuarios;
 
-	        if (u.getUsuario() != null && u.getUsuario().equals(usuario)) {
-	            return false;
-	        }
-	    }
+    public AuthService() {
+        this.repository = new UsuarioRepository();
+        this.usuarios = repository.carregarUsuarios();
+    }
 
-	    Usuario novo = new Usuario(nome, usuario, senha);
-	    usuarios.add(novo);
+    // =========================
+    // VALIDAÇÕES
+    // =========================
+    private boolean validarUsuario(String usuario) {
+        return usuario != null &&
+               usuario.matches("^[a-zA-Z0-9]{5,20}$"); // letras e números, 5-20 caracteres
+    }
 
-	    repository.salvarUsuarios(usuarios);
+    private boolean validarSenha(String senha) {
+        return senha != null &&
+               senha.matches("^[0-9]{6}$"); // apenas números, exatamente 6 dígitos
+    }
 
-	    return true;
-	}
-	
-	public synchronized boolean atualizarUsuario( String usuario, String novoNome, String novoUsuario, String novaSenha) {
+    // =========================
+    // CADASTRAR USUÁRIO
+    // =========================
+    public synchronized boolean cadastrar(String nome, String usuario, String senha) {
+        if (nome == null || usuario == null || senha == null) return false;
+        if (!validarUsuario(usuario) || !validarSenha(senha)) return false;
 
-	    for (Usuario u : usuarios) {
-	        if (u.getUsuario().equals(usuario)) {
+        for (Usuario u : usuarios) {
+            if (u.getUsuario().equals(usuario)) {
+                return false; // já existe
+            }
+        }
 
-	            if (novoNome != null && !novoNome.isEmpty()) {
-	                u.setNome(novoNome);
-	            }
-	            
-	            if(novoUsuario != null && !novoUsuario.isEmpty()) {
-	            	u.setUsuario(novoUsuario);
-	            }
+        Usuario novo = new Usuario(nome, usuario, senha);
+        usuarios.add(novo);
+        repository.salvarUsuarios(usuarios);
+        return true;
+    }
 
-	            if (novaSenha != null && !novaSenha.isEmpty()) {
-	                u.setSenha(novaSenha);
-	            }
+    // =========================
+    // ATUALIZAR USUÁRIO
+    // =========================
+    public synchronized boolean atualizarUsuario(String usuario, String novoNome, String novaSenha) {
+        for (Usuario u : usuarios) {
+            if (u.getUsuario().equals(usuario)) {
+                if (novoNome != null && !novoNome.isEmpty()) {
+                    u.setNome(novoNome);
+                }
+                if (novaSenha != null && validarSenha(novaSenha)) {
+                    u.setSenha(novaSenha);
+                } else {
+                    return false; // senha inválida
+                }
+                repository.salvarUsuarios(usuarios);
+                return true;
+            }
+        }
+        return false;
+    }
 
-	            repository.salvarUsuarios(usuarios);
-	            return true;
-	        }
-	    }
+    // =========================
+    // DELETAR USUÁRIO
+    // =========================
+    public synchronized boolean deletarUsuario(String username) {
+        Usuario remover = null;
+        for (Usuario u : usuarios) {
+            if (u.getUsuario().equals(username)) {
+                remover = u;
+                break;
+            }
+        }
+        if (remover != null) {
+            usuarios.remove(remover);
+            repository.salvarUsuarios(usuarios);
+            return true;
+        }
+        return false;
+    }
 
-	    return false;
-	}
-	
-	public synchronized boolean deletarUsuario(String username) {
-
-	    Usuario remover = null;
-
-	    for (Usuario u : usuarios) {
-	        if (u.getUsuario().equals(username)) {
-	            remover = u;
-	            break;
-	        }
-	    }
-
-	    if (remover != null) {
-	        usuarios.remove(remover);
-	        repository.salvarUsuarios(usuarios);
-	        return true;
-	    }
-
-	    return false;
-	}
-	
-	public Usuario realizarLogin(String usuario, String senha) {
-		for(Usuario u : usuarios) {
-			if(u.getUsuario().equals(usuario) && u.getSenha().equals(senha)) {
-				return u;
-			}
-		}
-		
-		return null;
-	}
+    // =========================
+    // LOGIN
+    // =========================
+    public Usuario realizarLogin(String usuario, String senha) {
+        for (Usuario u : usuarios) {
+            if (u.getUsuario().equals(usuario) && u.getSenha().equals(senha)) {
+                if (u.getToken() == null) {
+                    if (u.getUsuario().equalsIgnoreCase("admin")) {
+                        u.setToken("adm");
+                    } else {
+                        u.setToken("usr_" + u.getUsuario());
+                    }
+                }
+                return u;
+            }
+        }
+        return null;
+    }
 }

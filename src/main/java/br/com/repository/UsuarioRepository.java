@@ -13,78 +13,65 @@ import com.google.gson.reflect.TypeToken;
 import br.com.model.Usuario;
 
 public class UsuarioRepository {
-	
-	private static final String CAMINHO_ARQUIVO = "usuarios.json";
-	
-	private Gson gson;
-	
-	public UsuarioRepository() {
-		this.gson = new Gson();
-		criarArquivoSeNaoExistir();
-	}
-	
-	//================================
-	// CRIAR ARQUIVO SE NÃO EXISTIR
-	//================================
-	private void criarArquivoSeNaoExistir() {
-		try {
-			File file = new File(CAMINHO_ARQUIVO);
-			
-			if(!file.exists()) {
-				file.createNewFile();
-				
-				//INICIALIZA COM LISTA VAZIA
-				FileWriter writer = new FileWriter(file);
-				writer.write("[]");
-				writer.close();
-			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	//================================
-	// CARREGAR USUÁRIOS
-	//================================
-	
-	public List<Usuario> carregarUsuarios() {
-		try {
-			FileReader reader = new FileReader(CAMINHO_ARQUIVO);
-			
-			Type tipoLista = new TypeToken<List<Usuario>>() {}.getType();
-			
-			List<Usuario> usuarios = gson.fromJson(reader, tipoLista);
-			
-			reader.close();
-			
-			if(usuarios == null) {
-				return new ArrayList<>();
-			}
-			
-			return usuarios;
-			
-		} catch(Exception e) {
-			e.printStackTrace();
-			return new ArrayList<>();
-		}
-	}
-	
-	//================================
-	// CARREGAR USUÁRIOS
-	//================================
-	
-	public void salvarUsuarios(List<Usuario> usuarios) {
-		try {
-			FileWriter writer = new FileWriter(CAMINHO_ARQUIVO);
-			
-			gson.toJson(usuarios, writer);
-			
-			writer.flush();
-			writer.close();
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		} 
-	}
- }
+
+    private static final String CAMINHO_ARQUIVO = "usuarios.json";
+    private Gson gson;
+
+    public UsuarioRepository() {
+        this.gson = new Gson();
+        criarArquivoSeNaoExistir();
+    }
+
+    // ================================
+    // CRIAR ARQUIVO SE NÃO EXISTIR
+    // ================================
+    private void criarArquivoSeNaoExistir() {
+        try {
+            File file = new File(CAMINHO_ARQUIVO);
+
+            if (!file.exists()) {
+                file.createNewFile();
+                FileWriter writer = new FileWriter(file);
+                writer.write("[]"); // inicializa com lista vazia
+                writer.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ================================
+    // CARREGAR USUÁRIOS
+    // ================================
+    public List<Usuario> carregarUsuarios() {
+        try {
+            FileReader reader = new FileReader(CAMINHO_ARQUIVO);
+            Type tipoLista = new TypeToken<List<Usuario>>() {}.getType();
+            List<Usuario> usuarios = gson.fromJson(reader, tipoLista);
+            reader.close();
+
+            if (usuarios == null) {
+                return new ArrayList<>();
+            }
+            return usuarios;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // ================================
+    // SALVAR USUÁRIOS
+    // ================================
+    public void salvarUsuarios(List<Usuario> usuarios) {
+        try {
+            FileWriter writer = new FileWriter(CAMINHO_ARQUIVO);
+            gson.toJson(usuarios, writer);
+            writer.flush();
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

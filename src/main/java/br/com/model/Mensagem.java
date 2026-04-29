@@ -11,7 +11,7 @@ public class Mensagem {
 	private String resposta;
 	
 	private String novoNome;
-	private String novoUsuario;
+//	private String novoUsuario;
 	private String novaSenha;
 	
 	public Mensagem(String op, String nome, String usuario, String senha, String token, String destinatario,
@@ -101,7 +101,7 @@ public class Mensagem {
 	public void setNovoNome(String novoNome) {
 		this.novoNome = novoNome;
 	}
-	
+	/* TURMA NÃO ESTÁ UTILIZANDO 🚩
 	public String getNovousuario() {
 		return novoUsuario;
 	}
@@ -109,7 +109,7 @@ public class Mensagem {
 	public void setNovoUsuario(String novoUsuario) {
 		this.novoUsuario = novoUsuario;
 	}
-	
+	*/
 	public String getNovaSenha() {
 		return novaSenha;
 	}

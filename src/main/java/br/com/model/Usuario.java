@@ -4,6 +4,7 @@ public class Usuario {
 	private String nome;
 	private String usuario;
 	private String senha;
+	private String token;
 	
 	public Usuario(String nome, String usuario, String senha) {
 		this.nome = nome;
@@ -39,5 +40,12 @@ public class Usuario {
 		this.senha = senha;
 	}
 
+	public String getToken() {
+		return token;
+	}
+	
+	public void setToken(String token) {
+		this.token = token;
+	}
 
 }

@@ -10,9 +10,9 @@ public class Mensagem {
 	private String mensagem;
 	private String resposta;
 	
-	private String novoNome;
+//	private String novoNome;
 //	private String novoUsuario;
-	private String novaSenha;
+//	private String novaSenha;
 	
 	public Mensagem(String op, String nome, String usuario, String senha, String token, String destinatario,
 					String mensagem, String resposta) {
@@ -94,13 +94,13 @@ public class Mensagem {
 		this.resposta = resposta;
 	}
 	
-	public String getNovoNome() {
-		return novoNome;
-	}
+//	public String getNovoNome() {
+//		return novoNome;
+//	}
 	
-	public void setNovoNome(String novoNome) {
-		this.novoNome = novoNome;
-	}
+//	public void setNovoNome(String novoNome) {
+//		this.novoNome = novoNome;
+//	}
 	/* TURMA NÃO ESTÁ UTILIZANDO 🚩
 	public String getNovousuario() {
 		return novoUsuario;
@@ -110,11 +110,11 @@ public class Mensagem {
 		this.novoUsuario = novoUsuario;
 	}
 	*/
-	public String getNovaSenha() {
-		return novaSenha;
-	}
+//	public String getNovaSenha() {
+//		return novaSenha;
+//	}
 	
-	public void setNovaSenha(String novaSenha) {
-		this.novaSenha = novaSenha;
-	}
+//	public void setNovaSenha(String novaSenha) {
+//		this.novaSenha = novaSenha;
+//	}
 }

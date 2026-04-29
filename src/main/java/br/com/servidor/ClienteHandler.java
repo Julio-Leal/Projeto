@@ -211,11 +211,14 @@ public class ClienteHandler implements Runnable {
             resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
         } else {
-            boolean sucesso = authService.atualizarUsuario(usuario.getUsuario(), msg.getNovoNome(), msg.getNovaSenha());
+            boolean sucesso = authService.atualizarUsuario(usuario.getUsuario(), /*msg.getNovoNome(), msg.getNovaSenha()*/ msg.getNome(), msg.getSenha());
 
             if (sucesso) {
-                usuario.setNome(msg.getNovoNome());
-                usuario.setSenha(msg.getNovaSenha());
+//              usuario.setNome(msg.getNovoNome());
+//              usuario.setSenha(msg.getNovaSenha());
+            	usuario.setNome(msg.getNome());
+            	usuario.setSenha(msg.getSenha());
+            	
                 resposta.setResposta("200");
                 resposta.setMensagem("Atualizado com sucesso");
                 

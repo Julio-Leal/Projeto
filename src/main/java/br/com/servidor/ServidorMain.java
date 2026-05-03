@@ -10,7 +10,7 @@ import br.com.service.AuthService;
 public class ServidorMain {
 
     private static Scanner input = new Scanner(System.in);
-    private static int portaPadrao; 
+    private static int portaPadrao;
 
     public static void main(String[] args) {
         AuthService authService = new AuthService();

@@ -256,8 +256,9 @@ public class ClienteHandler implements Runnable {
                 
                 logServidor.setOp("deletarUsuario");
                 logServidor.setToken(usuario.getToken());
-                clientes.remove(this);
+                
                 usuario = null;
+                clientes.remove(this);  
 //                try {
 //                    socket.close();
 //                } catch (IOException e) {
@@ -284,8 +285,9 @@ public class ClienteHandler implements Runnable {
         	logServidor.setOp("logout");
             logServidor.setToken(usuario.getToken());
         	
-            clientes.remove(this);
             usuario = null;
+            clientes.remove(this);
+            
             resposta.setResposta("200");
             resposta.setMensagem("Logout efetuado");
             

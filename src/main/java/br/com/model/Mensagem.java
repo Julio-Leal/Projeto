@@ -89,4 +89,10 @@ public class Mensagem {
 	public void setResposta(String resposta) {
 		this.resposta = resposta;
 	}
+
+	@Override
+	public String toString() {
+		return "[Cliente]: [op=" + op + ", nome=" + nome + ", usuario=" + usuario + ", senha=" + senha + ", token="
+				+ token + ", destinatario=" + destinatario + ", mensagem=" + mensagem + ", resposta=" + resposta + "]";
+	}
 }

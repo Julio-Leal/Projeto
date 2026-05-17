@@ -195,7 +195,7 @@ public class ClienteHandler implements Runnable {
             logServidor.setOp("consultarUsuario");
             logServidor.setToken(usuario.getToken());
         }
-
+        
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
     }
@@ -232,7 +232,7 @@ public class ClienteHandler implements Runnable {
                 resposta.setMensagem("Erro ao atualizar usuário");
             }
         }
-
+        
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
     }

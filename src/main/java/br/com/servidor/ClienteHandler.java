@@ -123,6 +123,7 @@ public class ClienteHandler implements Runnable {
 
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================
@@ -149,6 +150,7 @@ public class ClienteHandler implements Runnable {
 
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================
@@ -198,6 +200,7 @@ public class ClienteHandler implements Runnable {
         
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================
@@ -235,6 +238,7 @@ public class ClienteHandler implements Runnable {
         
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================
@@ -272,6 +276,7 @@ public class ClienteHandler implements Runnable {
 
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================
@@ -298,6 +303,7 @@ public class ClienteHandler implements Runnable {
 
         out.println(gson.toJson(resposta));
         System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
+        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
     // =========================

@@ -31,8 +31,21 @@ public class UsuarioRepository {
 
             if (!file.exists()) {
                 file.createNewFile();
+                
+                //------------------------------------- build default ADM user -------------------------------------
+                List<Usuario> usuarios = new ArrayList<>();
+                Usuario admin = new Usuario(
+                		"Administrador", 
+                		"admin", 
+                		"123456"
+                );
+                usuarios.add(admin);
+                //convert to JSON
+                Gson gson = new Gson();
+                //------------------------------------- build default ADM user -------------------------------------
+                
                 FileWriter writer = new FileWriter(file);
-                writer.write("[]"); // inicializa com lista vazia
+                writer.write(gson.toJson(usuarios)); // initialize whit default ADM user
                 writer.close();
             }
         } catch (Exception e) {

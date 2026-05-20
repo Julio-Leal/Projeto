@@ -31,13 +31,14 @@ public class ClienteHandler implements Runnable {
     public void run() {
         try {
             // Comunicação explícita em UTF-8 conforme exigência do protocolo
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8")); 
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             out = new PrintWriter(socket.getOutputStream(), true); // Auto-flush ativo
 
             Gson gson = new Gson();
             String json;
 
             while ((json = in.readLine()) != null) {
+                System.out.println("[" + socket.getInetAddress() + "]: Recebido: " + json);
                 try {
                     Mensagem msg = gson.fromJson(json, Mensagem.class);
 
@@ -55,7 +56,7 @@ public class ClienteHandler implements Runnable {
             }
 
         } catch (Exception e) {
-            System.out.println("[Servidor]: Conexão encerrada com cliente: " + e.getMessage()); 
+            System.out.println("[Servidor]: Conexão encerrada com cliente: " + e.getMessage());
         } finally {
             desconectar();
         }
@@ -81,6 +82,18 @@ public class ClienteHandler implements Runnable {
             case "deletarUsuario":
                 tratarDelete(msg, gson);
                 break;
+            case "consultarUsuariosAdmin":
+                tratarConsultarTodosAdmin(msg, gson);
+                break;
+            case "consultarUsuarioAdmin":
+                tratarConsultarUsuarioAdmin(msg, gson);
+                break;
+            case "atualizarUsuarioAdmin":
+                tratarAtualizarUsuarioAdmin(msg, gson);
+                break;
+            case "deletarUsuarioAdmin":
+                tratarDeletarUsuarioAdmin(msg, gson);
+                break;
             case "logout":
                 tratarLogout(msg, gson);
                 break;
@@ -92,37 +105,39 @@ public class ClienteHandler implements Runnable {
     private void tratarLogin(Mensagem msg, Gson gson) {
         Usuario u = authService.realizarLogin(msg.getUsuario(), msg.getSenha());
         Mensagem resposta = new Mensagem();
-        
+
         if (u != null) {
             this.usuario = u;
             if (!clientes.contains(this)) {
                 clientes.add(this);
             }
-            resposta.setResposta("200"); 
+            resposta.setResposta("200");
             resposta.setToken(u.getToken());
         } else {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Usuário ou senha inválidos");
         }
 
-        out.println(gson.toJson(resposta));
-        System.out.println("[" + socket.getInetAddress() + "]: Requisitou Login -> Resposta Servidor: " + gson.toJson(resposta));
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Login -> Resposta: " + json);
     }
 
     private void tratarCadastro(Mensagem msg, Gson gson) {
         boolean sucesso = authService.cadastrar(msg.getNome(), msg.getUsuario(), msg.getSenha());
         Mensagem resposta = new Mensagem();
-        
+
         if (sucesso) {
-            resposta.setResposta("200"); 
+            resposta.setResposta("200");
             resposta.setMensagem("Cadastrado com sucesso");
         } else {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Erro ao cadastrar usuário. Verifique as restrições.");
         }
 
-        out.println(gson.toJson(resposta));
-        System.out.println("[" + socket.getInetAddress() + "]: Requisitou Cadastro -> Resposta Servidor: " + gson.toJson(resposta) );
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Cadastro -> Resposta: " + json);
     }
 
     private void tratarMensagem(Mensagem msg, Gson gson) {
@@ -133,7 +148,7 @@ public class ClienteHandler implements Runnable {
             for (ClienteHandler cliente : clientes) {
                 if (cliente.usuario != null && msg.getDestinatario().equalsIgnoreCase(cliente.usuario.getUsuario())) {
                     Mensagem resposta = new Mensagem();
-                    resposta.setResposta("200"); 
+                    resposta.setResposta("200");
                     resposta.setMensagem("[" + usuario.getUsuario() + "]: " + msg.getMensagem());
                     cliente.out.println(gson.toJson(resposta));
                     return;
@@ -144,149 +159,241 @@ public class ClienteHandler implements Runnable {
 
     private void tratarConsulta(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        
-        // 1. Validação do Token básico
+
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
             out.println(gson.toJson(resposta));
             return;
         }
 
-        boolean isAdmin = usuario.getToken().equals("adm"); 
-        String alvo = msg.getUsuario();
-
-        // Se o payload não especificar um alvo, assume o próprio usuário conectado
-        if (alvo == null || alvo.trim().isEmpty()) {
-            alvo = usuario.getUsuario();
-        }
-
-        // 2. Bloqueio Crítico: Usuário comum tentando consultar terceiros [cite: 53]
-        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
-            resposta.setResposta("401"); 
-            resposta.setMensagem("Operação não permitida para usuário comum."); 
+        Usuario encontrado = authService.buscarPorUsuario(usuario.getUsuario());
+        if (encontrado != null) {
+            resposta.setResposta("200");
+            resposta.setNome(encontrado.getNome());
+            resposta.setUsuario(encontrado.getUsuario());
         } else {
-            // ADM consultando qualquer um ou Usuário Comum consultando a si mesmo 
-            Usuario encontrado = authService.buscarPorUsuario(alvo);
-            if (encontrado != null) {
-                resposta.setResposta("200"); 
-                resposta.setNome(encontrado.getNome());
-                resposta.setUsuario(encontrado.getUsuario());
-            } else {
-                resposta.setResposta("401");
-                resposta.setMensagem("Usuário não encontrado.");
-            }
+            resposta.setResposta("401");
+            resposta.setMensagem("Usuário não encontrado.");
         }
-        
-        out.println(gson.toJson(resposta));
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Consulta -> Resposta: " + json);
     }
 
     private void tratarUpdate(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        
+
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
             out.println(gson.toJson(resposta));
             return;
         }
 
-        boolean isAdmin = usuario.getToken().equals("adm"); 
-        String alvo = msg.getUsuario(); // Login de quem será alterado
+        // Usuário comum só pode alterar seus próprios dados
+        boolean sucesso = authService.atualizarUsuario(usuario.getUsuario(), msg.getNome(), msg.getSenha());
 
-        if (alvo == null || alvo.trim().isEmpty()) {
-            alvo = usuario.getUsuario();
-        }
-
-        // Bloqueio Crítico: Usuário comum tentando editar terceiros [cite: 53, 67]
-        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
-            resposta.setResposta("401"); 
-            resposta.setMensagem("Operação não permitida para usuário comum."); 
+        if (sucesso) {
+            if (msg.getNome() != null) usuario.setNome(msg.getNome());
+            if (msg.getSenha() != null) usuario.setSenha(msg.getSenha());
+            resposta.setResposta("200");
+            resposta.setMensagem("Atualizado com sucesso");
         } else {
-            // ADM alterando terceiros OU Usuário comum alterando a si mesmo [cite: 49, 61]
-            boolean sucesso = authService.atualizarUsuario(alvo, msg.getNome(), msg.getSenha());
-
-            if (sucesso) {
-                // Se o próprio usuário se editou, sincroniza a instância local da Thread
-                if (usuario.getUsuario().equalsIgnoreCase(alvo)) {
-                    if (msg.getNome() != null) usuario.setNome(msg.getNome());
-                    if (msg.getSenha() != null) usuario.setSenha(msg.getSenha());
-                }
-                resposta.setResposta("200"); 
-                resposta.setMensagem("Atualizado com sucesso");
-            } else {
-                resposta.setResposta("401");
-                resposta.setMensagem("Erro ao atualizar dados (verifique a senha numérica).");
-            }
+            resposta.setResposta("401");
+            resposta.setMensagem("Erro ao atualizar dados (verifique a senha numérica).");
         }
-        
-        out.println(gson.toJson(resposta));
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Atualizar -> Resposta: " + json);
     }
 
     private void tratarDelete(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        
+
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
             out.println(gson.toJson(resposta));
             return;
         }
 
-        boolean isAdmin = usuario.getToken().equals("adm"); 
-        String alvo = msg.getUsuario();
+        // Usuário comum só pode deletar a própria conta
+        boolean sucesso = authService.deletarUsuario(usuario.getUsuario());
 
-        if (alvo == null || alvo.trim().isEmpty()) {
-            alvo = usuario.getUsuario();
-        }
-
-        // Bloqueio Crítico: Usuário comum tentando apagar terceiros [cite: 55, 68]
-        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
-            resposta.setResposta("401"); 
-            resposta.setMensagem("Operação não permitida para usuário comum."); 
+        if (sucesso) {
+            resposta.setResposta("200");
+            resposta.setMensagem("Deletado com sucesso");
+            usuario = null;
+            clientes.remove(this);
         } else {
-            // ADM excluindo terceiros OU Usuário comum se autodeletando [cite: 51, 63]
-            boolean sucesso = authService.deletarUsuario(alvo);
-
-            if (sucesso) {
-                resposta.setResposta("200"); 
-                resposta.setMensagem("Deletado com sucesso");
-                
-                // Se a conta apagada foi a do próprio cliente conectado, desconecta-o
-                if (usuario.getUsuario().equalsIgnoreCase(alvo)) {
-                    usuario = null;
-                    clientes.remove(this);
-                }
-            } else {
-                resposta.setResposta("401");
-                resposta.setMensagem("Erro ao deletar usuário.");
-            }
+            resposta.setResposta("401");
+            resposta.setMensagem("Erro ao deletar usuário.");
         }
 
-        out.println(gson.toJson(resposta));
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Deletar -> Resposta: " + json);
+    }
+
+    // =========== OPERAÇÕES ADM ===========
+
+    private boolean verificarTokenAdmin(Mensagem msg, Mensagem resposta) {
+        // O ADM usa o campo token_admin conforme o protocolo
+        String tokenAdmin = msg.getToken_admin();
+        if (tokenAdmin == null || !tokenAdmin.equals("adm")) {
+            resposta.setResposta("401");
+            resposta.setMensagem("Deve ser ADM para executar esta operação");
+            return false;
+        }
+        // Verifica também se o usuário conectado na sessão é realmente o admin
+        if (usuario == null || !usuario.getToken().equals("adm")) {
+            resposta.setResposta("401");
+            resposta.setMensagem("Deve ser ADM para executar esta operação");
+            return false;
+        }
+        return true;
+    }
+
+    private void tratarConsultarTodosAdmin(Mensagem msg, Gson gson) {
+        Mensagem resposta = new Mensagem();
+
+        if (!verificarTokenAdmin(msg, resposta)) {
+            out.println(gson.toJson(resposta));
+            System.out.println("[Servidor]: ConsultarTodosAdmin -> Resposta: " + gson.toJson(resposta));
+            return;
+        }
+
+        List<Usuario> lista = authService.listarUsuarios();
+        resposta.setResposta("200");
+        resposta.setLista_usuarios(lista);
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: ConsultarTodosAdmin -> Resposta: " + json);
+    }
+
+    private void tratarConsultarUsuarioAdmin(Mensagem msg, Gson gson) {
+        Mensagem resposta = new Mensagem();
+
+        if (!verificarTokenAdmin(msg, resposta)) {
+            out.println(gson.toJson(resposta));
+            System.out.println("[Servidor]: ConsultarUsuarioAdmin -> Resposta: " + gson.toJson(resposta));
+            return;
+        }
+
+        String alvo = msg.getUsuario();
+        if (alvo == null || alvo.trim().isEmpty()) {
+            resposta.setResposta("401");
+            resposta.setMensagem("Nome de usuário não informado.");
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        Usuario encontrado = authService.buscarPorUsuario(alvo);
+        if (encontrado != null) {
+            resposta.setResposta("200");
+            resposta.setNome(encontrado.getNome());
+            resposta.setUsuario(encontrado.getUsuario());
+        } else {
+            resposta.setResposta("401");
+            resposta.setMensagem("Usuário não encontrado.");
+        }
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: ConsultarUsuarioAdmin -> Resposta: " + json);
+    }
+
+    private void tratarAtualizarUsuarioAdmin(Mensagem msg, Gson gson) {
+        Mensagem resposta = new Mensagem();
+
+        if (!verificarTokenAdmin(msg, resposta)) {
+            out.println(gson.toJson(resposta));
+            System.out.println("[Servidor]: AtualizarUsuarioAdmin -> Resposta: " + gson.toJson(resposta));
+            return;
+        }
+
+        String alvo = msg.getUsuario();
+        if (alvo == null || alvo.trim().isEmpty()) {
+            resposta.setResposta("401");
+            resposta.setMensagem("Nome de usuário alvo não informado.");
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        boolean sucesso = authService.atualizarUsuario(alvo, msg.getNome(), msg.getSenha());
+
+        if (sucesso) {
+            resposta.setResposta("200");
+            resposta.setMensagem("Usuario atualizado com sucesso");
+        } else {
+            resposta.setResposta("401");
+            resposta.setMensagem("Erro ao atualizar (verifique se usuário existe e se senha tem 6 dígitos numéricos).");
+        }
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: AtualizarUsuarioAdmin -> Resposta: " + json);
+    }
+
+    private void tratarDeletarUsuarioAdmin(Mensagem msg, Gson gson) {
+        Mensagem resposta = new Mensagem();
+
+        if (!verificarTokenAdmin(msg, resposta)) {
+            out.println(gson.toJson(resposta));
+            System.out.println("[Servidor]: DeletarUsuarioAdmin -> Resposta: " + gson.toJson(resposta));
+            return;
+        }
+
+        String alvo = msg.getUsuario();
+        if (alvo == null || alvo.trim().isEmpty()) {
+            resposta.setResposta("401");
+            resposta.setMensagem("Nome de usuário alvo não informado.");
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        boolean sucesso = authService.deletarUsuario(alvo);
+
+        if (sucesso) {
+            resposta.setResposta("200");
+            resposta.setMensagem("Usuario deletado com sucesso");
+        } else {
+            resposta.setResposta("401");
+            resposta.setMensagem("Erro ao deletar usuário (verifique se existe e não é o admin padrão).");
+        }
+
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: DeletarUsuarioAdmin -> Resposta: " + json);
     }
 
     private void tratarLogout(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        
+
         if (usuario != null && usuario.getToken() != null && usuario.getToken().equals(msg.getToken())) {
             usuario = null;
             clientes.remove(this);
-            resposta.setResposta("200"); 
+            resposta.setResposta("200");
             resposta.setMensagem("Logout efetuado");
         } else {
-            resposta.setResposta("401"); 
+            resposta.setResposta("401");
             resposta.setMensagem("Erro ao efetuar logout");
         }
 
-        out.println(gson.toJson(resposta));
+        String json = gson.toJson(resposta);
+        out.println(json);
+        System.out.println("[Servidor]: Logout -> Resposta: " + json);
     }
 
     private void desconectar() {
         try {
             clientes.remove(this);
             if (socket != null && !socket.isClosed()) {
-                socket.close(); 
+                socket.close();
             }
         } catch (Exception e) {
             e.printStackTrace();

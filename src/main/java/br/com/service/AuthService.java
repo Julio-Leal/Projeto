@@ -111,4 +111,9 @@ public class AuthService {
         }
         return null;
     }
+    
+    public List<Usuario> listarUsuarios() {
+    	this.usuarios = repository.carregarUsuarios();
+        return usuarios;
+    }
 }

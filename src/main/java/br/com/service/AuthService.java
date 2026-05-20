@@ -14,29 +14,23 @@ public class AuthService {
         this.usuarios = repository.carregarUsuarios();
     }
 
-    // =========================
-    // VALIDAÇÕES
-    // =========================
     private boolean validarUsuario(String usuario) {
-        return usuario != null &&
-               usuario.matches("^[a-zA-Z0-9]{5,20}$"); // letras e números, 5-20 caracteres
+        return usuario != null && usuario.matches("^[a-zA-Z0-9]{5,20}$"); 
     }
 
     private boolean validarSenha(String senha) {
-        return senha != null &&
-               senha.matches("^[0-9]{6}$"); // apenas números, exatamente 6 dígitos
+        return senha != null && senha.matches("^[0-9]{6}$"); 
     }
 
-    // =========================
-    // CADASTRAR USUÁRIO
-    // =========================
     public synchronized boolean cadastrar(String nome, String usuario, String senha) {
         if (nome == null || usuario == null || senha == null) return false;
         if (!validarUsuario(usuario) || !validarSenha(senha)) return false;
 
+        // Atualiza a lista em tempo real antes de checar duplicidade
+        this.usuarios = repository.carregarUsuarios();
         for (Usuario u : usuarios) {
-            if (u.getUsuario().equals(usuario)) {
-                return false; // já existe
+            if (u.getUsuario().equalsIgnoreCase(usuario)) {
+                return false; 
             }
         }
 
@@ -46,19 +40,20 @@ public class AuthService {
         return true;
     }
 
-    // =========================
-    // ATUALIZAR USUÁRIO
-    // =========================
-    public synchronized boolean atualizarUsuario(String usuario, String novoNome, String novaSenha) {
+    // Método aprimorado para permitir que o ADM atualize cadastros de terceiros
+    public synchronized boolean atualizarUsuario(String usuarioAlvo, String novoNome, String novaSenha) {
+        this.usuarios = repository.carregarUsuarios();
         for (Usuario u : usuarios) {
-            if (u.getUsuario().equals(usuario)) {
-                if (novoNome != null && !novoNome.isEmpty()) {
+            if (u.getUsuario().equalsIgnoreCase(usuarioAlvo)) {
+                if (novoNome != null && !novoNome.trim().isEmpty()) {
                     u.setNome(novoNome);
                 }
-                if (novaSenha != null && validarSenha(novaSenha)) {
-                    u.setSenha(novaSenha);
-                } else {
-                    return false; // senha inválida
+                if (novaSenha != null) {
+                    if (validarSenha(novaSenha)) {
+                        u.setSenha(novaSenha);
+                    } else {
+                        return false; 
+                    }
                 }
                 repository.salvarUsuarios(usuarios);
                 return true;
@@ -67,18 +62,21 @@ public class AuthService {
         return false;
     }
 
-    // =========================
-    // DELETAR USUÁRIO
-    // =========================
-    public synchronized boolean deletarUsuario(String username) {
+    // Método aprimorado para permitir a remoção de usuários alvos
+    public synchronized boolean deletarUsuario(String usuarioAlvo) {
+        this.usuarios = repository.carregarUsuarios();
         Usuario remover = null;
         for (Usuario u : usuarios) {
-            if (u.getUsuario().equals(username)) {
+            if (u.getUsuario().equalsIgnoreCase(usuarioAlvo)) {
                 remover = u;
                 break;
             }
         }
         if (remover != null) {
+            // Regra implícita: não permitir deletar o próprio administrador padrão
+            if (remover.getUsuario().equalsIgnoreCase("admin")) {
+                return false;
+            }
             usuarios.remove(remover);
             repository.salvarUsuarios(usuarios);
             return true;
@@ -86,17 +84,15 @@ public class AuthService {
         return false;
     }
 
-    // =========================
-    // LOGIN
-    // =========================
     public Usuario realizarLogin(String usuario, String senha) {
+        this.usuarios = repository.carregarUsuarios();
         for (Usuario u : usuarios) {
-            if (u.getUsuario().equals(usuario) && u.getSenha().equals(senha)) {
+            if (u.getUsuario().equalsIgnoreCase(usuario) && u.getSenha().equals(senha)) {
                 if (u.getToken() == null) {
                     if (u.getUsuario().equalsIgnoreCase("admin")) {
-                        u.setToken("adm");
+                        u.setToken("adm"); 
                     } else {
-                        u.setToken("usr_" + u.getUsuario());
+                        u.setToken("usr_" + u.getUsuario()); 
                     }
                 }
                 return u;
@@ -104,6 +100,15 @@ public class AuthService {
         }
         return null;
     }
-    
-    
+
+    // Método auxiliar para buscar dados de um usuário pelo username (usado na Consulta do ADM)
+    public Usuario buscarPorUsuario(String username) {
+        this.usuarios = repository.carregarUsuarios();
+        for (Usuario u : usuarios) {
+            if (u.getUsuario().equalsIgnoreCase(username)) {
+                return u;
+            }
+        }
+        return null;
+    }
 }

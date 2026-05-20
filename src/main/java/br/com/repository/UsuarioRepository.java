@@ -6,10 +6,8 @@ import java.io.FileWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import br.com.model.Usuario;
 
 public class UsuarioRepository {
@@ -22,30 +20,19 @@ public class UsuarioRepository {
         criarArquivoSeNaoExistir();
     }
 
-    // ================================
-    // CRIAR ARQUIVO SE NÃO EXISTIR
-    // ================================
     private void criarArquivoSeNaoExistir() {
         try {
             File file = new File(CAMINHO_ARQUIVO);
-
             if (!file.exists()) {
                 file.createNewFile();
                 
-                //------------------------------------- build default ADM user -------------------------------------
                 List<Usuario> usuarios = new ArrayList<>();
-                Usuario admin = new Usuario(
-                		"Administrador", 
-                		"admin", 
-                		"123456"
-                );
+                // Usuário Administrador Padrão definido 
+                Usuario admin = new Usuario("Administrador", "admin", "123456"); 
                 usuarios.add(admin);
-                //convert to JSON
-                Gson gson = new Gson();
-                //------------------------------------- build default ADM user -------------------------------------
                 
                 FileWriter writer = new FileWriter(file);
-                writer.write(gson.toJson(usuarios)); // initialize whit default ADM user
+                writer.write(gson.toJson(usuarios));
                 writer.close();
             }
         } catch (Exception e) {
@@ -53,12 +40,12 @@ public class UsuarioRepository {
         }
     }
 
-    // ================================
-    // CARREGAR USUÁRIOS
-    // ================================
     public List<Usuario> carregarUsuarios() {
         try {
-            FileReader reader = new FileReader(CAMINHO_ARQUIVO);
+            File file = new File(CAMINHO_ARQUIVO);
+            if (!file.exists()) return new ArrayList<>();
+            
+            FileReader reader = new FileReader(file);
             Type tipoLista = new TypeToken<List<Usuario>>() {}.getType();
             List<Usuario> usuarios = gson.fromJson(reader, tipoLista);
             reader.close();
@@ -67,16 +54,12 @@ public class UsuarioRepository {
                 return new ArrayList<>();
             }
             return usuarios;
-
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();
         }
     }
 
-    // ================================
-    // SALVAR USUÁRIOS
-    // ================================
     public void salvarUsuarios(List<Usuario> usuarios) {
         try {
             FileWriter writer = new FileWriter(CAMINHO_ARQUIVO);

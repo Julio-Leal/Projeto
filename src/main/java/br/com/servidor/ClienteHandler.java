@@ -1,16 +1,13 @@
 package br.com.servidor;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import com.google.gson.Gson;
-
 import br.com.model.Mensagem;
 import br.com.model.Usuario;
 import br.com.service.AuthService;
@@ -23,7 +20,6 @@ public class ClienteHandler implements Runnable {
     private BufferedReader in;
     private Usuario usuario;
 
-    // LISTA DE CLIENTES CONECTADOS (THREAD SAFE)
     private static List<ClienteHandler> clientes = Collections.synchronizedList(new ArrayList<>());
 
     public ClienteHandler(Socket socket, AuthService authService) {
@@ -34,8 +30,9 @@ public class ClienteHandler implements Runnable {
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            // Comunicação explícita em UTF-8 conforme exigência do protocolo
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8")); 
+            out = new PrintWriter(socket.getOutputStream(), true); // Auto-flush ativo
 
             Gson gson = new Gson();
             String json;
@@ -45,7 +42,7 @@ public class ClienteHandler implements Runnable {
                     Mensagem msg = gson.fromJson(json, Mensagem.class);
 
                     if (msg == null || msg.getOp() == null) {
-                        System.out.println("[Servidor]: JSON inválido recebido: " + json);
+                        System.out.println("[Servidor]: JSON inválido ou sem 'op' recebido.");
                         continue;
                     }
 
@@ -58,15 +55,12 @@ public class ClienteHandler implements Runnable {
             }
 
         } catch (Exception e) {
-            System.out.println("[Servidor]: Erro com cliente: " + e.getMessage());
+            System.out.println("[Servidor]: Conexão encerrada com cliente: " + e.getMessage()); 
         } finally {
             desconectar();
         }
     }
 
-    // =========================
-    // PROCESSADOR PRINCIPAL
-    // =========================
     private void processarMensagem(Mensagem msg, Gson gson) {
         switch (msg.getOp()) {
             case "login":
@@ -95,231 +89,205 @@ public class ClienteHandler implements Runnable {
         }
     }
 
-    // =========================
-    // LOGIN
-    // =========================
     private void tratarLogin(Mensagem msg, Gson gson) {
         Usuario u = authService.realizarLogin(msg.getUsuario(), msg.getSenha());
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
         if (u != null) {
             this.usuario = u;
-            clientes.add(this);
-
-            resposta.setResposta("200");
+            if (!clientes.contains(this)) {
+                clientes.add(this);
+            }
+            resposta.setResposta("200"); 
             resposta.setToken(u.getToken());
-//          resposta.setMensagem("Login efetuado com sucesso");
-            
-            logServidor.setOp("login");	
-            logServidor.setUsuario(msg.getUsuario());
-            logServidor.setSenha(msg.getSenha());
-            
-
         } else {
-            resposta.setResposta("401");
+            resposta.setResposta("401"); 
             resposta.setMensagem("Usuário ou senha inválidos");
         }
 
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
+        System.out.println("[" + socket.getInetAddress() + "]: Requisitou Login -> Resposta Servidor: " + gson.toJson(resposta));
     }
 
-    // =========================
-    // CADASTRO
-    // =========================
     private void tratarCadastro(Mensagem msg, Gson gson) {
         boolean sucesso = authService.cadastrar(msg.getNome(), msg.getUsuario(), msg.getSenha());
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
         if (sucesso) {
-            resposta.setResposta("200");
+            resposta.setResposta("200"); 
             resposta.setMensagem("Cadastrado com sucesso");
-            
-            logServidor.setOp("cadastrarUsuario");
-            logServidor.setNome(msg.getNome());
-            logServidor.setUsuario(msg.getUsuario());
-            logServidor.setSenha(msg.getSenha());
-            
         } else {
-            resposta.setResposta("401");
-            resposta.setMensagem("Erro ao cadastrar usuário");
+            resposta.setResposta("401"); 
+            resposta.setMensagem("Erro ao cadastrar usuário. Verifique as restrições.");
         }
 
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
+        System.out.println("[" + socket.getInetAddress() + "]: Requisitou Cadastro -> Resposta Servidor: " + gson.toJson(resposta) );
     }
 
-    // =========================
-    // CHAT 1 PARA 1
-    // =========================
     private void tratarMensagem(Mensagem msg, Gson gson) {
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) return;
         if (msg.getDestinatario() == null) return;
 
         synchronized (clientes) {
             for (ClienteHandler cliente : clientes) {
-                if (cliente.usuario != null &&
-                    msg.getDestinatario().equals(cliente.usuario.getUsuario())) {
-
+                if (cliente.usuario != null && msg.getDestinatario().equalsIgnoreCase(cliente.usuario.getUsuario())) {
                     Mensagem resposta = new Mensagem();
-                    resposta.setResposta("200");
-                    resposta.setMensagem("Mensagem enviada com sucesso");
+                    resposta.setResposta("200"); 
                     resposta.setMensagem("[" + usuario.getUsuario() + "]: " + msg.getMensagem());
-
                     cliente.out.println(gson.toJson(resposta));
-                    System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(resposta));
                     return;
                 }
             }
         }
     }
 
-    // =========================
-    // CONSULTAR
-    // =========================
     private void tratarConsulta(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
+        // 1. Validação do Token básico
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401");
+            resposta.setResposta("401"); 
             resposta.setMensagem("Token inválido");
-//        } else if(usuario.getToken().equals("adm")) {
-//        	//Implementar busca no arquivo json através do json. 
-//        	resposta.setResposta("200");
-//            resposta.setNome(usuario.getNome());
-//            resposta.setUsuario(usuario.getUsuario());
-//            
-//            logServidor.setOp("consultarUsuario");
-//            logServidor.setToken(usuario.getToken());
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        boolean isAdmin = usuario.getToken().equals("adm"); 
+        String alvo = msg.getUsuario();
+
+        // Se o payload não especificar um alvo, assume o próprio usuário conectado
+        if (alvo == null || alvo.trim().isEmpty()) {
+            alvo = usuario.getUsuario();
+        }
+
+        // 2. Bloqueio Crítico: Usuário comum tentando consultar terceiros [cite: 53]
+        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
+            resposta.setResposta("401"); 
+            resposta.setMensagem("Operação não permitida para usuário comum."); 
         } else {
-            resposta.setResposta("200");
-            resposta.setNome(usuario.getNome());
-            resposta.setUsuario(usuario.getUsuario());
-            
-            logServidor.setOp("consultarUsuario");
-            logServidor.setToken(usuario.getToken());
+            // ADM consultando qualquer um ou Usuário Comum consultando a si mesmo 
+            Usuario encontrado = authService.buscarPorUsuario(alvo);
+            if (encontrado != null) {
+                resposta.setResposta("200"); 
+                resposta.setNome(encontrado.getNome());
+                resposta.setUsuario(encontrado.getUsuario());
+            } else {
+                resposta.setResposta("401");
+                resposta.setMensagem("Usuário não encontrado.");
+            }
         }
         
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
-    // =========================
-    // ATUALIZAR USUÁRIO
-    // =========================
     private void tratarUpdate(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401");
+            resposta.setResposta("401"); 
             resposta.setMensagem("Token inválido");
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        boolean isAdmin = usuario.getToken().equals("adm"); 
+        String alvo = msg.getUsuario(); // Login de quem será alterado
+
+        if (alvo == null || alvo.trim().isEmpty()) {
+            alvo = usuario.getUsuario();
+        }
+
+        // Bloqueio Crítico: Usuário comum tentando editar terceiros [cite: 53, 67]
+        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
+            resposta.setResposta("401"); 
+            resposta.setMensagem("Operação não permitida para usuário comum."); 
         } else {
-            boolean sucesso = authService.atualizarUsuario(usuario.getUsuario(), /*msg.getNovoNome(), msg.getNovaSenha()*/ msg.getNome(), msg.getSenha());
+            // ADM alterando terceiros OU Usuário comum alterando a si mesmo [cite: 49, 61]
+            boolean sucesso = authService.atualizarUsuario(alvo, msg.getNome(), msg.getSenha());
 
             if (sucesso) {
-//              usuario.setNome(msg.getNovoNome());
-//              usuario.setSenha(msg.getNovaSenha());
-            	usuario.setNome(msg.getNome());
-            	usuario.setSenha(msg.getSenha());
-            	
-                resposta.setResposta("200");
+                // Se o próprio usuário se editou, sincroniza a instância local da Thread
+                if (usuario.getUsuario().equalsIgnoreCase(alvo)) {
+                    if (msg.getNome() != null) usuario.setNome(msg.getNome());
+                    if (msg.getSenha() != null) usuario.setSenha(msg.getSenha());
+                }
+                resposta.setResposta("200"); 
                 resposta.setMensagem("Atualizado com sucesso");
-                
-                logServidor.setOp("atualizarUsuario");
-                logServidor.setToken(usuario.getToken());
-                logServidor.setNome(usuario.getNome());
-                logServidor.setSenha(usuario.getSenha());
-                
             } else {
                 resposta.setResposta("401");
-                resposta.setMensagem("Erro ao atualizar usuário");
+                resposta.setMensagem("Erro ao atualizar dados (verifique a senha numérica).");
             }
         }
         
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
-    // =========================
-    // DELETAR USUÁRIO
-    // =========================
     private void tratarDelete(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
-            resposta.setResposta("401");
+            resposta.setResposta("401"); 
             resposta.setMensagem("Token inválido");
+            out.println(gson.toJson(resposta));
+            return;
+        }
+
+        boolean isAdmin = usuario.getToken().equals("adm"); 
+        String alvo = msg.getUsuario();
+
+        if (alvo == null || alvo.trim().isEmpty()) {
+            alvo = usuario.getUsuario();
+        }
+
+        // Bloqueio Crítico: Usuário comum tentando apagar terceiros [cite: 55, 68]
+        if (!isAdmin && !usuario.getUsuario().equalsIgnoreCase(alvo)) {
+            resposta.setResposta("401"); 
+            resposta.setMensagem("Operação não permitida para usuário comum."); 
         } else {
-            boolean sucesso = authService.deletarUsuario(usuario.getUsuario());
+            // ADM excluindo terceiros OU Usuário comum se autodeletando [cite: 51, 63]
+            boolean sucesso = authService.deletarUsuario(alvo);
 
             if (sucesso) {
-                resposta.setResposta("200");
+                resposta.setResposta("200"); 
                 resposta.setMensagem("Deletado com sucesso");
                 
-                logServidor.setOp("deletarUsuario");
-                logServidor.setToken(usuario.getToken());
-                
-                usuario = null;
-                clientes.remove(this);  
-//                try {
-//                    socket.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
+                // Se a conta apagada foi a do próprio cliente conectado, desconecta-o
+                if (usuario.getUsuario().equalsIgnoreCase(alvo)) {
+                    usuario = null;
+                    clientes.remove(this);
+                }
             } else {
                 resposta.setResposta("401");
-                resposta.setMensagem("Erro ao deletar usuário");
+                resposta.setMensagem("Erro ao deletar usuário.");
             }
         }
 
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
-    // =========================
-    // REALIZAR LOGOUT
-    // =========================
     private void tratarLogout(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        Mensagem logServidor = new Mensagem();
         
         if (usuario != null && usuario.getToken() != null && usuario.getToken().equals(msg.getToken())) {
-        	logServidor.setOp("logout");
-            logServidor.setToken(usuario.getToken());
-        	
             usuario = null;
             clientes.remove(this);
-            
-            resposta.setResposta("200");
+            resposta.setResposta("200"); 
             resposta.setMensagem("Logout efetuado");
-            
         } else {
-            resposta.setResposta("401");
+            resposta.setResposta("401"); 
             resposta.setMensagem("Erro ao efetuar logout");
         }
 
         out.println(gson.toJson(resposta));
-        System.out.println("["+socket.getInetAddress()+"]: "+gson.toJson(logServidor));
-        System.out.println("[Enviando]: "+gson.toJson(resposta));
     }
 
-    // =========================
-    // DESCONECTAR
-    // =========================
     private void desconectar() {
         try {
             clientes.remove(this);
-            socket.close();
+            if (socket != null && !socket.isClosed()) {
+                socket.close(); 
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

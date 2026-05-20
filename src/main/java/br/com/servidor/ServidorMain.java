@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
-
 import br.com.service.AuthService;
 
 public class ServidorMain {
@@ -19,7 +18,7 @@ public class ServidorMain {
             definirPorta();
 
             ServerSocket servidor = new ServerSocket(portaPadrao);
-            System.out.println("[Servidor]: Executando na porta [" + portaPadrao + "].");
+            System.out.println("[Servidor]: Executando na porta [" + portaPadrao + "]."); 
 
             while (true) {
                 System.out.println("[Servidor]: Aguardando cliente...");
@@ -37,15 +36,19 @@ public class ServidorMain {
 
     private static void definirPorta() {
         int tempPorta = 0;
-
         do {
-            System.out.printf("[Servidor]: Informe o número da porta: ");
-            tempPorta = input.nextInt();
-
-            if (tempPorta > 1024 && tempPorta < 49000) {
-                portaPadrao = tempPorta;
-            } else {
-                System.out.println("[Servidor]: Porta inválida ou já em uso!");
+            System.out.printf("[Servidor]: Informe o número da porta: "); 
+            try {
+                tempPorta = input.nextInt();
+                if (tempPorta > 1024 && tempPorta < 65535) {
+                    portaPadrao = tempPorta;
+                } else {
+                    System.out.println("[Servidor]: Porta inválida (Escolha entre 1025 e 65534)!");
+                    tempPorta = 0;
+                }
+            } catch (Exception e) {
+                System.out.println("[Servidor]: Entrada inválida!");
+                input.next(); // Limpa buffer
                 tempPorta = 0;
             }
         } while (tempPorta == 0);

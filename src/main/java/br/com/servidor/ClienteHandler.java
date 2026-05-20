@@ -188,7 +188,14 @@ public class ClienteHandler implements Runnable {
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
             resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
-            
+//        } else if(usuario.getToken().equals("adm")) {
+//        	//Implementar busca no arquivo json através do json. 
+//        	resposta.setResposta("200");
+//            resposta.setNome(usuario.getNome());
+//            resposta.setUsuario(usuario.getUsuario());
+//            
+//            logServidor.setOp("consultarUsuario");
+//            logServidor.setToken(usuario.getToken());
         } else {
             resposta.setResposta("200");
             resposta.setNome(usuario.getNome());

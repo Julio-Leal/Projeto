@@ -160,6 +160,15 @@ public class ClienteHandler implements Runnable {
     private void tratarConsulta(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
 
+        // Se o usuário não estiver na sessão, tenta validar pelo token enviado
+        if (usuario == null && msg.getToken() != null) {
+            String login = msg.getToken().replace("usr_", "");
+            Usuario u = authService.buscarPorUsuario(login);
+            if (u != null && msg.getToken().equals("usr_" + u.getUsuario())) {
+                this.usuario = u;
+            }
+        }
+
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
             resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
@@ -184,6 +193,15 @@ public class ClienteHandler implements Runnable {
 
     private void tratarUpdate(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
+
+        // Se o usuário não estiver na sessão, tenta validar pelo token enviado
+        if (usuario == null && msg.getToken() != null) {
+            String login = msg.getToken().replace("usr_", "");
+            Usuario u = authService.buscarPorUsuario(login);
+            if (u != null && msg.getToken().equals("usr_" + u.getUsuario())) {
+                this.usuario = u;
+            }
+        }
 
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
             resposta.setResposta("401");
@@ -213,6 +231,15 @@ public class ClienteHandler implements Runnable {
     private void tratarDelete(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
 
+        // Se o usuário não estiver na sessão, tenta validar pelo token enviado
+        if (usuario == null && msg.getToken() != null) {
+            String login = msg.getToken().replace("usr_", "");
+            Usuario u = authService.buscarPorUsuario(login);
+            if (u != null && msg.getToken().equals("usr_" + u.getUsuario())) {
+                this.usuario = u;
+            }
+        }
+
         if (usuario == null || usuario.getToken() == null || !usuario.getToken().equals(msg.getToken())) {
             resposta.setResposta("401");
             resposta.setMensagem("Token inválido");
@@ -241,17 +268,26 @@ public class ClienteHandler implements Runnable {
     // =========== OPERAÇÕES ADM ===========
 
     private boolean verificarTokenAdmin(Mensagem msg, Mensagem resposta) {
-        // O ADM usa o campo token_admin conforme o protocolo
-        String tokenAdmin = msg.getToken_admin();
-        if (tokenAdmin == null || !tokenAdmin.equals("adm")) {
+        // O ADM pode enviar o token no campo 'token' ou 'token_admin'
+        String tokenEnviado = msg.getToken_admin() != null ? msg.getToken_admin() : msg.getToken();
+        
+        if (tokenEnviado == null || !tokenEnviado.equals("adm")) {
             resposta.setResposta("401");
             resposta.setMensagem("Deve ser ADM para executar esta operação");
             return false;
         }
-        // Verifica também se o usuário conectado na sessão é realmente o admin
-        if (usuario == null || !usuario.getToken().equals("adm")) {
+        
+        // Se o usuário não estiver na sessão (ex: nova conexão), tentamos validar pelo token
+        if (usuario == null) {
+            Usuario u = authService.buscarPorUsuario("admin");
+            if (u != null && "adm".equals(tokenEnviado)) {
+                this.usuario = u;
+            }
+        }
+
+        if (usuario == null || !usuario.getUsuario().equalsIgnoreCase("admin")) {
             resposta.setResposta("401");
-            resposta.setMensagem("Deve ser ADM para executar esta operação");
+            resposta.setMensagem("Sessão inválida ou usuário não é ADM");
             return false;
         }
         return true;

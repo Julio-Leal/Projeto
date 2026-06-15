@@ -269,7 +269,7 @@ public class ClienteHandler implements Runnable {
 
     private boolean verificarTokenAdmin(Mensagem msg, Mensagem resposta) {
         // O ADM pode enviar o token no campo 'token' ou 'token_admin'
-        String tokenEnviado = msg.getToken_admin() != null ? msg.getToken_admin() : msg.getToken();
+        String tokenEnviado = msg.getToken() != null ? msg.getToken() : msg.getToken();
         
         if (tokenEnviado == null || !tokenEnviado.equals("adm")) {
             resposta.setResposta("401");

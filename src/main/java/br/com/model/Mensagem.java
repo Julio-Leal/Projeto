@@ -8,7 +8,7 @@ public class Mensagem {
     private String usuario;
     private String senha;
     private String token;
-    private String token_admin;
+//    private String token_admin; //NÃO MAIS UTILIZADO 🚩
     private String destinatario;
     private String mensagem;
     private String resposta;
@@ -69,13 +69,13 @@ public class Mensagem {
 		this.token = token;
 	}
 
-	public String getToken_admin() {
-		return token_admin;
-	}
+//	public String getToken_admin() {
+//		return token_admin;
+//	}
 
-	public void setToken_admin(String token_admin) {
-		this.token_admin = token_admin;
-	}
+//	public void setToken_admin(String token_admin) {
+//		this.token_admin = token_admin;
+//	}
 
 	public String getDestinatario() {
 		return destinatario;
@@ -112,7 +112,7 @@ public class Mensagem {
 	@Override
     public String toString() {
         return "[Mensagem]: [op=" + op + ", nome=" + nome + ", usuario=" + usuario + ", senha=" + senha
-                + ", token=" + token + ", token_admin=" + token_admin + ", destinatario=" + destinatario
+                + ", token=" + token + /*", token_admin=" + token_admin + */", destinatario=" + destinatario
                 + ", mensagem=" + mensagem + ", resposta=" + resposta + "]";
     }
 }

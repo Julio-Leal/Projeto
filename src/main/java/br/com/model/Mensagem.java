@@ -8,10 +8,9 @@ public class Mensagem {
     private String usuario;
     private String senha;
     private String token;
-    private String token_admin;
     private String destinatario;
-    private String mensagem;
     private String resposta;
+    private String mensagem;
     private List<Usuario> lista_usuarios;
 
     public Mensagem(String op, String nome, String usuario, String senha, String token, String destinatario,
@@ -22,8 +21,8 @@ public class Mensagem {
         this.senha = senha;
         this.token = token;
         this.destinatario = destinatario;
-        this.mensagem = mensagem;
         this.resposta = resposta;
+        this.mensagem = mensagem;
     }
 
     public Mensagem() {
@@ -69,20 +68,20 @@ public class Mensagem {
 		this.token = token;
 	}
 
-	public String getToken_admin() {
-		return token_admin;
-	}
-
-	public void setToken_admin(String token_admin) {
-		this.token_admin = token_admin;
-	}
-
 	public String getDestinatario() {
 		return destinatario;
 	}
 
 	public void setDestinatario(String destinatario) {
 		this.destinatario = destinatario;
+	}
+	
+	public String getResposta() {
+		return resposta;
+	}
+
+	public void setResposta(String resposta) {
+		this.resposta = resposta;
 	}
 
 	public String getMensagem() {
@@ -91,14 +90,6 @@ public class Mensagem {
 
 	public void setMensagem(String mensagem) {
 		this.mensagem = mensagem;
-	}
-
-	public String getResposta() {
-		return resposta;
-	}
-
-	public void setResposta(String resposta) {
-		this.resposta = resposta;
 	}
 
 	public List<Usuario> getLista_usuarios() {
@@ -112,7 +103,7 @@ public class Mensagem {
 	@Override
     public String toString() {
         return "[Mensagem]: [op=" + op + ", nome=" + nome + ", usuario=" + usuario + ", senha=" + senha
-                + ", token=" + token + ", token_admin=" + token_admin + ", destinatario=" + destinatario
-                + ", mensagem=" + mensagem + ", resposta=" + resposta + "]";
+                + ", token=" + token + ", destinatario=" + destinatario
+                + ", resposta=" + resposta + ", mensagem=" + mensagem + "]";
     }
 }

@@ -276,49 +276,55 @@ public class ClienteHandler implements Runnable {
 
     private void tratarConsultarTodosAdmin(Mensagem msg, Gson gson) {
     	Mensagem resposta = new Mensagem();
-        if (usuario == null || !usuario.getUsuario().equalsIgnoreCase("admin")) {
-        	resposta.setResposta("401");
-        	resposta.setMensagem("Deve ser ADM para consultar a lista");
-        } else {
-        	resposta.setResposta("200");
-            resposta.setLista_usuarios(authService.listarUsuarios());
-        }
+    	if(usuario != null && usuario.getUsuario().equalsIgnoreCase("admin")) {
+    		resposta.setResposta("200");
+    		resposta.setLista_usuarios(authService.listarUsuarios());
+    	} else {
+    		resposta.setResposta("401");
+    		resposta.setMensagem("Deve ser ADM para consultar a lista");
+    	}
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }
 
     private void tratarConsultarUsuarioAdmin(Mensagem msg, Gson gson) {
-        if (usuario == null || !usuario.getUsuario().equalsIgnoreCase("admin")) return;
-        Usuario u = authService.buscarPorUsuario(msg.getUsuario());
-        Mensagem resposta = new Mensagem();
-        if (u != null) {
-            resposta.setResposta("200");
-            resposta.setNome(u.getNome());
-            resposta.setUsuario(u.getUsuario());
-        } else {
-            resposta.setResposta("401");
-            resposta.setMensagem("Token inválido");
-        }
+		Mensagem resposta = new Mensagem();
+    	if(usuario != null && usuario.getUsuario().equalsIgnoreCase("admin")) {
+    		Usuario u = authService.buscarPorUsuario(msg.getUsuario());
+    		if(u != null) {
+    			resposta.setResposta("200");
+                resposta.setNome(u.getNome());
+                resposta.setUsuario(u.getUsuario());
+    		} else  {
+    			resposta.setResposta("401");
+    			resposta.setMensagem("Usuário não encontrado");
+    		}
+    	} else {
+    		resposta.setResposta("401");
+    		resposta.setMensagem("Token inválido");
+    	}
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }
 
     private void tratarAtualizarUsuarioAdmin(Mensagem msg, Gson gson) {
-        if (usuario == null || !usuario.getUsuario().equalsIgnoreCase("admin")) return;
-        boolean sucesso = authService.atualizarUsuario(msg.getUsuario(), msg.getNome(), msg.getSenha());
-        Mensagem resposta = new Mensagem();
-        resposta.setResposta(sucesso ? "200" : "401");
-        resposta.setMensagem(sucesso ? "Usuário atualizado com sucesso" : "Erro ao atualizar usuário");
+    	Mensagem resposta = new Mensagem();
+    	if(usuario != null && usuario.getUsuario().equalsIgnoreCase("admin")) {
+    		boolean sucesso = authService.atualizarUsuario(msg.getUsuario(), msg.getNome(), msg.getSenha());
+    		resposta.setResposta(sucesso ? "200" : "401");
+    		resposta.setMensagem(sucesso ? "Usuário atualizado com cuscesso" : "Erro ao atualizar usuário");
+    	}
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }
 
     private void tratarDeletarUsuarioAdmin(Mensagem msg, Gson gson) {
-        if (usuario == null || !usuario.getUsuario().equalsIgnoreCase("admin")) return;
-        boolean sucesso = authService.deletarUsuario(msg.getUsuario());
-        Mensagem resposta = new Mensagem();
-        resposta.setResposta(sucesso ? "200" : "401");
-        resposta.setMensagem(sucesso ? "Usuário deletado com sucesso" : "Erro ao deletar usuário");
+    	Mensagem resposta = new Mensagem();
+    	if(usuario != null && usuario.getUsuario().equalsIgnoreCase("admin")) {
+    		boolean sucesso = authService.deletarUsuario(msg.getUsuario());
+    		resposta.setResposta(sucesso ? "200" : "401");
+    		resposta.setMensagem(sucesso ? "Usuário deletado com cuscesso" : "Erro ao deletar usuário");
+    	}
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }

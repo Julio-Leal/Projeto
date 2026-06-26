@@ -47,13 +47,12 @@ public class AuthService {
             if (u.getUsuario().equalsIgnoreCase(usuarioAlvo)) {
                 if (novoNome != null && !novoNome.trim().isEmpty()) {
                     u.setNome(novoNome);
-                }
-                if (novaSenha != null) {
+                } 
+                
+                if (novaSenha != null && !novaSenha.trim().isEmpty()) {
                     if (validarSenha(novaSenha)) {
                         u.setSenha(novaSenha);
-                    } else {
-                        return false; 
-                    }
+                    } 
                 }
                 repository.salvarUsuarios(usuarios);
                 return true;

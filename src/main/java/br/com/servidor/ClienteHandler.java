@@ -122,7 +122,7 @@ public class ClienteHandler implements Runnable {
     private void tratarLogout(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
         if (this.usuario != null) {
-            gui.log("[Logout]: " + this.usuario.getUsuario());
+//          gui.log("[Logout]: " + this.usuario.getUsuario());
             this.usuario = null;
             resposta.setResposta("200");
             resposta.setMensagem("Logout efetuado");
@@ -143,9 +143,10 @@ public class ClienteHandler implements Runnable {
         Mensagem encaminhada = new Mensagem();
         encaminhada.setOp("receberMensagem");
         encaminhada.setUsuario(this.usuario.getUsuario());
+        encaminhada.setRemetente(this.usuario.getNome());
         encaminhada.setMensagem(msg.getMensagem());
 
-        if ("todos".equalsIgnoreCase(msg.getDestinatario())) {
+        if ("/todos".equalsIgnoreCase(msg.getDestinatario())) {
             gui.log("[Broadcast] de " + usuario.getUsuario() + ": " + msg.getMensagem());
             synchronized (clientes) {
                 for (ClienteHandler c : clientes) {
@@ -313,7 +314,11 @@ public class ClienteHandler implements Runnable {
     		boolean sucesso = authService.atualizarUsuario(msg.getUsuario(), msg.getNome(), msg.getSenha());
     		resposta.setResposta(sucesso ? "200" : "401");
     		resposta.setMensagem(sucesso ? "Usuário atualizado com cuscesso" : "Erro ao atualizar usuário");
+    	} else {
+    		resposta.setResposta("401");
+    		resposta.setMensagem("Deve ser ADM para atualizar um usuário");
     	}
+    	
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }
@@ -324,7 +329,11 @@ public class ClienteHandler implements Runnable {
     		boolean sucesso = authService.deletarUsuario(msg.getUsuario());
     		resposta.setResposta(sucesso ? "200" : "401");
     		resposta.setMensagem(sucesso ? "Usuário deletado com cuscesso" : "Erro ao deletar usuário");
+    	} else {
+    		resposta.setResposta("401");
+    		resposta.setMensagem("Deve ser ADM para deletar um usuário");
     	}
+    	
         gui.log("[Servidor]: " + gson.toJson(resposta));
         out.println(gson.toJson(resposta));
     }

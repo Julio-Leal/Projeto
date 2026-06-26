@@ -85,7 +85,8 @@ public class ServidorGUI extends JFrame {
             btnIniciar.setEnabled(false);
             txtPorta.setEditable(false);
             log("[Servidor]: Iniciado na porta " + porta);
-
+            System.out.println("[Servidor]: Iniciado na porta " + porta);
+            
             new Thread(() -> {
                 while (executando) {
                     try {

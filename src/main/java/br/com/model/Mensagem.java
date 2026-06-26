@@ -9,11 +9,12 @@ public class Mensagem {
     private String senha;
     private String token;
     private String destinatario;
+    private String remetente;
     private String resposta;
     private String mensagem;
     private List<Usuario> lista_usuarios;
 
-    public Mensagem(String op, String nome, String usuario, String senha, String token, String destinatario,
+    public Mensagem(String op, String nome, String usuario, String senha, String token, String destinatario, String remetente,
                     String mensagem, String resposta) {
         this.op = op;
         this.nome = nome;
@@ -21,6 +22,7 @@ public class Mensagem {
         this.senha = senha;
         this.token = token;
         this.destinatario = destinatario;
+        this.remetente = remetente;
         this.resposta = resposta;
         this.mensagem = mensagem;
     }
@@ -75,6 +77,15 @@ public class Mensagem {
 	public void setDestinatario(String destinatario) {
 		this.destinatario = destinatario;
 	}
+	
+	public String getRemetente() {
+		return remetente;
+	}
+
+	public void setRemetente(String remetente) {
+		this.remetente = remetente;
+	}
+	
 	
 	public String getResposta() {
 		return resposta;

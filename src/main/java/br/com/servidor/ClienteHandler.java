@@ -170,7 +170,8 @@ public class ClienteHandler implements Runnable {
 
     private void tratarListarLogados(Mensagem msg, Gson gson) {
         Mensagem resposta = new Mensagem();
-        resposta.setOp("listaUsuariosLogados");
+        resposta.setOp("listarUsuariosLogados");
+        resposta.setToken(usuario.getToken());
         List<Usuario> logados = clientes.stream()
                 .filter(c -> c.usuario != null)
                 .map(c -> c.usuario)
@@ -183,7 +184,7 @@ public class ClienteHandler implements Runnable {
     private void notificarTodosUsuariosLogados() {
         Gson gson = new Gson();
         Mensagem msg = new Mensagem();
-        msg.setOp("listaUsuariosLogados");
+        msg.setOp("listarUsuariosLogados");
         List<Usuario> logados = clientes.stream()
                 .filter(c -> c.usuario != null)
                 .map(c -> c.usuario)
